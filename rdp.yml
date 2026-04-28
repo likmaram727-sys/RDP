@@ -1,12 +1,12 @@
-
-  name: RDP-Setup
-on: workflow_dispatch
+name: Windows-RDP-Fast
+on: 
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Ngrok Download
+      - name: Preparing Ngrok
         run: |
           Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
           Expand-Archive ngrok.zip
@@ -17,14 +17,12 @@ jobs:
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
-      - name: Start RDP
+      - name: Connect RDP
         run: |
           Start-Process .\ngrok\ngrok.exe -ArgumentList "tcp 3389"
-          Write-Host "RDP is starting..."
           Start-Sleep -Seconds 10
-          $tunnel = curl http://127.0.0.1:4040/api/tunnels | ConvertFrom-Json
-          $address = $tunnel.tunnels.public_url
-          Write-Host "Apka RDP Address hai: $address"
-      - name: Keep Alive
+          Invoke-RestMethod http://127.0.0.1:4040/api/tunnels | Select-Object -ExpandProperty tunnels | Select-Object -ExpandProperty public_url
+      - name: Wait for Connection
         run: Start-Sleep -Seconds 21600
+
 
